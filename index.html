@@ -132,52 +132,66 @@
     // ------------------------------
     // Function: Search Yu-Gi-Oh! Manga via Jikan API
     // ------------------------------
-    async function searchManga(query) {
-      if (!query) return "";
+  // PLACE THIS REPLACEMENT FUNCTION INSTEAD OF THE OLD searchManga()
+  async function searchManga(query) {
+    if (!query) return "";
 
-      const url = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=5`;
+    const url = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=10`;
 
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
 
-        if (data.data && data.data.length) {
-          return data.data.map(manga => `
-            <div class="card">
-              <img src="${manga.images.jpg.large_image_url}" alt="${manga.title}" />
-              <p>${manga.title}</p>
-            </div>
-          `).join("");
-        }
-        return "";
-      } catch (err) {
-        console.error("Manga API error:", err);
-        return "";
+      if (data.data && data.data.length) {
+
+        // ------------------------------
+        // FILTER: Only show manga related to Yu-Gi-Oh!
+        // ------------------------------
+        const yugiohManga = data.data.filter(m =>
+          m.title.toLowerCase().includes("yu-gi-oh") ||
+          (m.title_english && m.title_english.toLowerCase().includes("yu-gi-oh")) ||
+          (m.title_japanese && m.title_japanese.includes("遊☆戯☆王"))
+        );
+
+        if (yugiohManga.length === 0) return "";
+
+        return yugiohManga.map(manga => `
+          <div class="card">
+            <img src="${manga.images.jpg.small_image_url}" alt="${manga.title}" />
+            <p>${manga.title}</p>
+          </div>
+        `).join("");
       }
+
+      return "";
+    } catch (err) {
+      console.error("Manga API error:", err);
+      return "";
+    }
+  }
+
+  // ------------------------------
+  // Event: Input Search Handler
+  // ------------------------------
+  input.addEventListener("input", async e => {
+    const query = e.target.value.trim();
+    if (!query) {
+      results.innerHTML = "";
+      return;
     }
 
-    // ------------------------------
-    // Event: Input Search Handler
-    // ------------------------------
-    input.addEventListener("input", async e => {
-      const query = e.target.value.trim();
-      if (!query) {
-        results.innerHTML = "";
-        return;
-      }
+    // Search both cards and manga in parallel
+    const [cardsHTML, mangaHTML] = await Promise.all([
+      searchCards(query),
+      searchManga(query)
+    ]);
 
-      // Search both cards and manga in parallel
-      const [cardsHTML, mangaHTML] = await Promise.all([
-        searchCards(query),
-        searchManga(query)
-      ]);
-
-      if (!cardsHTML && !mangaHTML) {
-        results.innerHTML = `<p>No results found.</p>`;
-      } else {
-        results.innerHTML = cardsHTML + mangaHTML;
-      }
-    });
-  </script>
+    if (!cardsHTML && !mangaHTML) {
+      results.innerHTML = `<p>No results found.</p>`;
+    } else {
+      results.innerHTML = cardsHTML + mangaHTML;
+    }
+  });
+</script>
 </body>
 </html>
