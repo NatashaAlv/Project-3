@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Yu Gi Oh! API Card Library</title>
+  <title>Yu Gi Oh! API Card & Manga Library</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -50,6 +50,7 @@
       background: #ffffff;
       color: #000000;
       transition: box-shadow 0.3s ease;
+      margin-bottom: 1em;
     }
 
     input:focus {
@@ -75,11 +76,6 @@
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    /* .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
-    } */
-
     .card img {
       width: 100%;
       height: auto;
@@ -96,10 +92,10 @@
 <body>
   <header>
     <img src="logo.png" alt="YGOPRO Logo">
-    <h1>Card Library</h1>
+    <h1>Card & Manga Library</h1>
   </header>
 
-  <input type="text" id="search" placeholder="Search cards..." />
+  <input type="text" id="search" placeholder="Search cards or manga..." />
 
   <div id="results" class="cards"></div>
 
@@ -107,12 +103,10 @@
     const input = document.getElementById("search");
     const results = document.getElementById("results");
 
+    // ------------------------------
+    // Function: Search Yu-Gi-Oh! Cards
+    // ------------------------------
     async function searchCards(query) {
-      if (!query) {
-        results.innerHTML = "";
-        return;
-      }
-
       const proxy = "https://corsproxy.io/?";
       const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`;
 
@@ -121,25 +115,68 @@
         const data = await res.json();
 
         if (data.data) {
-          results.innerHTML = data.data.slice(0, 10).map(card => `
+          return data.data.slice(0, 5).map(card => `
             <div class="card">
               <img src="${card.card_images[0].image_url}" alt="${card.name}" />
               <p>${card.name}</p>
             </div>
           `).join("");
-        } else {
-          results.innerHTML = `<p>No results found.</p>`;
         }
-
+        return "";
       } catch (err) {
-        console.error(err);
-        results.innerHTML = `<p>Error fetching cards.</p>`;
+        console.error("Card API error:", err);
+        return "";
       }
     }
 
-    input.addEventListener("input", e => {
+    // ------------------------------
+    // Function: Search Yu-Gi-Oh! Manga via Jikan API
+    // ------------------------------
+    async function searchManga(query) {
+      if (!query) return "";
+
+      const url = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=5`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.data && data.data.length) {
+          return data.data.map(manga => `
+            <div class="card">
+              <img src="${manga.images.jpg.image_url}" alt="${manga.title}" />
+              <p>${manga.title}</p>
+            </div>
+          `).join("");
+        }
+        return "";
+      } catch (err) {
+        console.error("Manga API error:", err);
+        return "";
+      }
+    }
+
+    // ------------------------------
+    // Event: Input Search Handler
+    // ------------------------------
+    input.addEventListener("input", async e => {
       const query = e.target.value.trim();
-      searchCards(query);
+      if (!query) {
+        results.innerHTML = "";
+        return;
+      }
+
+      // Search both cards and manga in parallel
+      const [cardsHTML, mangaHTML] = await Promise.all([
+        searchCards(query),
+        searchManga(query)
+      ]);
+
+      if (!cardsHTML && !mangaHTML) {
+        results.innerHTML = `<p>No results found.</p>`;
+      } else {
+        results.innerHTML = cardsHTML + mangaHTML;
+      }
     });
   </script>
 </body>
