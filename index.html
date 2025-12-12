@@ -57,14 +57,37 @@
       box-shadow: 0 0 8px #f5c518;
     }
 
-    .cards {
+    /* RESULTS CONTAINER */
+    #results {
+      display: flex;
+      flex-direction: row;
+      justify-content: center;
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+    }
+
+    /* INDIVIDUAL SECTIONS */
+    .results-section {
+      flex: 1;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
       gap: 16px;
-      margin-top: 30px;
+      padding: 10px;
+      border-left: 1px solid #555;
+    }
+
+    .results-section:first-child {
+      border-left: none;
+    }
+
+    .results-section h2 {
       width: 100%;
-      max-width: 1000px;
+      text-align: center;
+      color: #f5c518;
+      margin: 0 0 10px 0;
+      font-family: 'Georgia', 'Times New Roman', serif;
     }
 
     .card {
@@ -97,104 +120,104 @@
 
   <input type="text" id="search" placeholder="Search cards or manga..." />
 
-  <div id="results" class="cards"></div>
+  <div id="results">
+    <div id="card-results" class="results-section">
+      <h2>Cards</h2>
+    </div>
+    <div id="manga-results" class="results-section">
+      <h2>Manga</h2>
+    </div>
+  </div>
 
   <script>
-  const input = document.getElementById("search");
-  const results = document.getElementById("results");
-
-  // ------------------------------
-  // Function: Search Yu-Gi-Oh! Cards (UNCHANGED)
-  // ------------------------------
-  async function searchCards(query) {
-    const proxy = "https://corsproxy.io/?";
-    const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`;
-
-    try {
-      const res = await fetch(proxy + url);
-      const data = await res.json();
-
-      if (data.data) {
-        return data.data.slice(0, 5).map(card => `
-          <div class="card">
-            <img src="${card.card_images[0].image_url}" alt="${card.name}" />
-            <p>${card.name}</p>
-          </div>
-        `).join("");
-      }
-      return "";
-    } catch (err) {
-      console.error("Card API error:", err);
-      return "";
-    }
-  }
-
-  // ------------------------------
-  // Function: Search Yu-Gi-Oh! Manga via Jikan API
-  // ------------------------------
-  // CHANGE MADE: Filter manga to only Yu-Gi-Oh! and use small_image_url
-  async function searchManga(query) {
-    if (!query) return "";
-
-    const url = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=10`;
-
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-
-      if (data.data && data.data.length) {
-
-        // FILTER: Only manga related to Yu-Gi-Oh!
-        const yugiohManga = data.data.filter(m =>
-          m.title.toLowerCase().includes("yu-gi-oh") ||
-          (m.title_english && m.title_english.toLowerCase().includes("yu-gi-oh")) ||
-          (m.title_japanese && m.title_japanese.includes("遊☆戯☆王"))
-        );
-
-        if (yugiohManga.length === 0) return "";
-
-        return yugiohManga.map(manga => `
-          <div class="card">
-            <img src="${manga.images.jpg.small_image_url}" alt="${manga.title}" />
-            <p>${manga.title}</p>
-          </div>
-        `).join("");
-      }
-
-      return "";
-    } catch (err) {
-      console.error("Manga API error:", err);
-      return "";
-    }
-  }
-
-  // ------------------------------
-  // Event: Input Search Handler
-  // ------------------------------
-  input.addEventListener("input", async e => {
-    const query = e.target.value.trim();
-    if (!query) {
-      results.innerHTML = "";
-      return;
-    }
-
-    // SEARCH CARDS AND MANGA IN PARALLEL
-    const [cardsHTML, mangaHTML] = await Promise.all([
-      searchCards(query),
-      searchManga(query)
-    ]);
+    const input = document.getElementById("search");
+    const cardResults = document.getElementById("card-results");
+    const mangaResults = document.getElementById("manga-results");
 
     // ------------------------------
-    // CHANGE MADE: Separate cards and manga visually
+    // Search Yu-Gi-Oh! Cards
     // ------------------------------
-    let combinedHTML = "";
-    if (cardsHTML) combinedHTML += `<h2 style="width:100%; text-align:center;">Cards</h2>${cardsHTML}`;
-    if (mangaHTML) combinedHTML += `<h2 style="width:100%; text-align:center;">Manga</h2>${mangaHTML}`;
+    async function searchCards(query) {
+      const proxy = "https://corsproxy.io/?";
+      const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`;
 
-    if (!combinedHTML) combinedHTML = `<p>No results found.</p>`;
+      try {
+        const res = await fetch(proxy + url);
+        const data = await res.json();
 
-    results.innerHTML = combinedHTML;
-  });
-</script>
+        if (data.data) {
+          return data.data.slice(0, 5).map(card => `
+            <div class="card">
+              <img src="${card.card_images[0].image_url}" alt="${card.name}" />
+              <p>${card.name}</p>
+            </div>
+          `).join("");
+        }
+        return "";
+      } catch (err) {
+        console.error("Card API error:", err);
+        return "";
+      }
+    }
+
+    // ------------------------------
+    // Search Yu-Gi-Oh! Manga via Jikan API
+    // ------------------------------
+    async function searchManga(query) {
+      if (!query) return "";
+
+      const url = `https://api.jikan.moe/v4/manga?q=${encodeURIComponent(query)}&limit=10`;
+
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (data.data && data.data.length) {
+
+          // FILTER: Only show manga related to Yu-Gi-Oh!
+          const yugiohManga = data.data.filter(m =>
+            m.title.toLowerCase().includes("yu-gi-oh") ||
+            (m.title_english && m.title_english.toLowerCase().includes("yu-gi-oh")) ||
+            (m.title_japanese && m.title_japanese.includes("遊☆戯☆王"))
+          );
+
+          if (yugiohManga.length === 0) return "";
+
+          return yugiohManga.map(manga => `
+            <div class="card">
+              <img src="${manga.images.jpg.large_image_url}" alt="${manga.title}" />
+              <p>${manga.title}</p>
+            </div>
+          `).join("");
+        }
+
+        return "";
+      } catch (err) {
+        console.error("Manga API error:", err);
+        return "";
+      }
+    }
+
+    // ------------------------------
+    // Input Search Handler
+    // ------------------------------
+    input.addEventListener("input", async e => {
+      const query = e.target.value.trim();
+
+      if (!query) {
+        cardResults.innerHTML = "<h2>Cards</h2>";
+        mangaResults.innerHTML = "<h2>Manga</h2>";
+        return;
+      }
+
+      const [cardsHTML, mangaHTML] = await Promise.all([
+        searchCards(query),
+        searchManga(query)
+      ]);
+
+      cardResults.innerHTML = "<h2>Cards</h2>" + (cardsHTML || "<p>No cards found.</p>");
+      mangaResults.innerHTML = "<h2>Manga</h2>" + (mangaHTML || "<p>No manga found.</p>");
+    });
+  </script>
 </body>
 </html>
