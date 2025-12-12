@@ -100,39 +100,39 @@
   <div id="results" class="cards"></div>
 
   <script>
-    const input = document.getElementById("search");
-    const results = document.getElementById("results");
+  const input = document.getElementById("search");
+  const results = document.getElementById("results");
 
-    // ------------------------------
-    // Function: Search Yu-Gi-Oh! Cards
-    // ------------------------------
-    async function searchCards(query) {
-      const proxy = "https://corsproxy.io/?";
-      const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`;
+  // ------------------------------
+  // Function: Search Yu-Gi-Oh! Cards (UNCHANGED)
+  // ------------------------------
+  async function searchCards(query) {
+    const proxy = "https://corsproxy.io/?";
+    const url = `https://db.ygoprodeck.com/api/v7/cardinfo.php?fname=${encodeURIComponent(query)}`;
 
-      try {
-        const res = await fetch(proxy + url);
-        const data = await res.json();
+    try {
+      const res = await fetch(proxy + url);
+      const data = await res.json();
 
-        if (data.data) {
-          return data.data.slice(0, 5).map(card => `
-            <div class="card">
-              <img src="${card.card_images[0].image_url}" alt="${card.name}" />
-              <p>${card.name}</p>
-            </div>
-          `).join("");
-        }
-        return "";
-      } catch (err) {
-        console.error("Card API error:", err);
-        return "";
+      if (data.data) {
+        return data.data.slice(0, 5).map(card => `
+          <div class="card">
+            <img src="${card.card_images[0].image_url}" alt="${card.name}" />
+            <p>${card.name}</p>
+          </div>
+        `).join("");
       }
+      return "";
+    } catch (err) {
+      console.error("Card API error:", err);
+      return "";
     }
+  }
 
-    // ------------------------------
-    // Function: Search Yu-Gi-Oh! Manga via Jikan API
-    // ------------------------------
-  // PLACE THIS REPLACEMENT FUNCTION INSTEAD OF THE OLD searchManga()
+  // ------------------------------
+  // Function: Search Yu-Gi-Oh! Manga via Jikan API
+  // ------------------------------
+  // CHANGE MADE: Filter manga to only Yu-Gi-Oh! and use small_image_url
   async function searchManga(query) {
     if (!query) return "";
 
@@ -144,9 +144,7 @@
 
       if (data.data && data.data.length) {
 
-        // ------------------------------
-        // FILTER: Only show manga related to Yu-Gi-Oh!
-        // ------------------------------
+        // FILTER: Only manga related to Yu-Gi-Oh!
         const yugiohManga = data.data.filter(m =>
           m.title.toLowerCase().includes("yu-gi-oh") ||
           (m.title_english && m.title_english.toLowerCase().includes("yu-gi-oh")) ||
@@ -157,7 +155,7 @@
 
         return yugiohManga.map(manga => `
           <div class="card">
-            <img src="${manga.images.jpg.large_image_url}" alt="${manga.title}" />
+            <img src="${manga.images.jpg.small_image_url}" alt="${manga.title}" />
             <p>${manga.title}</p>
           </div>
         `).join("");
@@ -180,17 +178,22 @@
       return;
     }
 
-    // Search both cards and manga in parallel
+    // SEARCH CARDS AND MANGA IN PARALLEL
     const [cardsHTML, mangaHTML] = await Promise.all([
       searchCards(query),
       searchManga(query)
     ]);
 
-    if (!cardsHTML && !mangaHTML) {
-      results.innerHTML = `<p>No results found.</p>`;
-    } else {
-      results.innerHTML = cardsHTML + mangaHTML;
-    }
+    // ------------------------------
+    // CHANGE MADE: Separate cards and manga visually
+    // ------------------------------
+    let combinedHTML = "";
+    if (cardsHTML) combinedHTML += `<h2 style="width:100%; text-align:center;">Cards</h2>${cardsHTML}`;
+    if (mangaHTML) combinedHTML += `<h2 style="width:100%; text-align:center;">Manga</h2>${mangaHTML}`;
+
+    if (!combinedHTML) combinedHTML = `<p>No results found.</p>`;
+
+    results.innerHTML = combinedHTML;
   });
 </script>
 </body>
