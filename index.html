@@ -92,16 +92,21 @@
 
     .card {
       width: 200px;
+      height: 300px; /* fixed card height for alignment */
       text-align: center;
       background: #1b1b1b;
-      padding: 15px;
+      padding: 10px;
       border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
       transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
     .card img {
       width: 100%;
-      height: auto;
+      height: 200px; /* fixed image height */
+      object-fit: contain; /* maintain aspect ratio */
       border-radius: 6px;
       margin-bottom: 10px;
     }
@@ -109,6 +114,7 @@
     .card p {
       margin: 0;
       font-size: 1rem;
+      text-align: center;
     }
   </style>
 </head>
